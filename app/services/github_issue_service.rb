@@ -52,15 +52,19 @@ class GithubIssueService
     end
   end
 
+  def self.detect_txt(message)
+    return message['text'] if message['attachments'].nil?
+    return message['text'] if message['attachments'].size.zero?
+    return message['text'] if message['attachments'].first['service_name'].nil?
+    return message['text'] if message['attachments'].first['service_name'].empty?
+    return message['attachments'].first['title'] if message['attachments'].first['text'].nil?
+    return message['attachments'].first['title'] if message['attachments'].first['text'].empty?
+    message['attachments'].first['text']
+  end
+
   def self.parse_message(message)
     Rails.logger.info message.inspect
-    txt = if message['attachments'].nil? ||
-             message['attachments'].size.zero? ||
-             (!message['attachments'].first['service_name'].nil? && message['attachments'].first['service_name'].empty?)
-            message['text']
-          else
-            message['attachments'].first['text'].nil? || message['attachments'].first['text'].empty? ? message['attachments'].first['title'] : message['attachments'].first['text']
-      end
+    txt = detect_txt(message)
 
     txt.gsub!(/<!subteam\^[A-Z0-9]{9}\|(@.*?)>/, '\\1')
     ids = txt.scan(/<@[A-Z0-9]{9}>/)
